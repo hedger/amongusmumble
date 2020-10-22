@@ -3,8 +3,13 @@ package mumble
 import (
 	"log"
 	"strings"
+	"unicode"
+
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 
 	"layeh.com/gumble/gumble"
+	"github.com/agnivade/levenshtein"
 )
 
 // Kill marks a player as dead
@@ -14,11 +19,9 @@ func Kill(c *gumble.Client, player string, gamestate string, deadplayers []strin
 	log.Println("In game player:", player)
 	aliveusers := c.Channels[alive.ID].Users
 	var player2 string
-	for _, element := range aliveusers {
-		if element.Comment == player {
-			player2 = strings.TrimSpace(element.Name)
-			log.Println("Mumble user:", player2)
-		}
+	player2 = FindUserForPlayer(aliveusers, player)
+	if len(player2) == 0 {
+		log.Println("Mumble user is unknown for dead player", player2)
 	}
 
 	duplicateplayer := 0
@@ -124,21 +127,66 @@ func Endgame(c *gumble.Client) {
 	}
 }
 
+func isMn(r rune) bool {
+	return unicode.Is(unicode.Mn, r) // Mn: nonspacing marks
+}
+
+func FindUserForPlayer(users gumble.Users, player string) string {
+	log.Println("Resolving user: ", player)
+	foundUser := users.Find(player)
+	if foundUser != nil {
+		log.Println("Matching user: ", foundUser.Name)
+		return strings.TrimSpace(foundUser.Name)
+	}
+
+	var mumbleUserName string
+	
+	t := transform.Chain(norm.NFD, transform.RemoveFunc(isMn), norm.NFC)
+	
+	bestMatchingDist := 9001
+	var bestMatchingUser *gumble.User
+
+	for _, element := range users {
+		mumbleUserName = strings.TrimSpace(element.Name)
+		// log.Println("Mumble user:", mumbleUserName)
+		// log.Println("Mumble user cmt:", element.Comment)
+		mumbleUserName, _, _ := transform.String(t, mumbleUserName)
+		mumbleUserName = strings.ToLower(mumbleUserName)
+		// log.Println("Filtered mumble user:", mumbleUserName)
+
+		levDist := levenshtein.ComputeDistance(mumbleUserName, player)
+		// log.Println("Lev dist:", levDist)
+
+		if (levDist < bestMatchingDist) {
+			bestMatchingUser = element
+			bestMatchingDist = levDist
+		}
+	}
+
+	// log.Println("Best dist:", bestMatchingDist)
+
+	if (bestMatchingDist > 9000) || (bestMatchingDist > (len(player) - 2)) {
+		// log.Println("No best match")
+		return ""
+	}
+
+	return strings.TrimSpace(bestMatchingUser.Name)
+}
+
 // Namecheck makes sure player has a valid comment
 func Namecheck(c *gumble.Client, player string) {
-	var player2 string
+	//var player2 string
 
 	lobby := c.Channels.Find("AmongUs", "Lobby")
 	lobbyusers := c.Channels[lobby.ID].Users
 
 	log.Println("Checking if", player, "has a mumble user set")
-	for _, element := range lobbyusers {
-		if element.Comment == player {
-			player2 = element.Name
-			log.Println("User set:", player2, "==", player)
-			return
-		}
+	mumbleUser := FindUserForPlayer(lobbyusers, player)
+	if len(mumbleUser) > 0 {
+		log.Println("User set:", mumbleUser, "==", player)
+		return
 	}
+}
 	log.Println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
 	log.Println("Player", player, "does not have a mumble user set.")
 	log.Println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
