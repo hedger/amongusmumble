@@ -186,7 +186,7 @@ func Namecheck(c *gumble.Client, player string) {
 		log.Println("User set:", mumbleUser, "==", player)
 		return
 	}
-}
+
 	log.Println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
 	log.Println("Player", player, "does not have a mumble user set.")
 	log.Println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
