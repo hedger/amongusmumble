@@ -147,7 +147,12 @@ func FindUserForPlayer(users gumble.Users, player string) string {
 	var bestMatchingUser *gumble.User
 
 	for _, element := range users {
-		mumbleUserName = strings.TrimSpace(element.Name)
+		mumbleUserName = strings.Map(func(r rune) rune {
+		    if unicode.IsLetter(r) || unicode.IsNumber(r) {
+			    return r
+    		}
+	    	return -1
+	    }, element.Name)
 		// log.Println("Mumble user:", mumbleUserName)
 		// log.Println("Mumble user cmt:", element.Comment)
 		mumbleUserName, _, _ := transform.String(t, mumbleUserName)
