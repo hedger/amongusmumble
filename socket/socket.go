@@ -101,7 +101,11 @@ func SocketioServer(client *gumble.Client, listenaddress string, listenport stri
 
 		if gamestate == "LOBBY" {
             if player.Action != 1 /* did not just left */ && player.Action != 5 /* did not just disconnected */ {
-    			mumble.Namecheck(client, strings.TrimSpace(player.Name))
+    			isFound := mumble.Namecheck(client, strings.TrimSpace(player.Name))
+                if isFound == false {
+					channel := client.Channels.Find("AmongUs")
+                    channel.Send("'" + player.Name + "' is invalid", true)
+                }
             }
 		} else {
 			if player.IsDead == true {
