@@ -132,10 +132,10 @@ func isMn(r rune) bool {
 }
 
 func FindUserForPlayer(users gumble.Users, player string) string {
-	log.Println("Resolving user: ", player)
+	// log.Println("Resolving user: ", player)
 	foundUser := users.Find(player)
 	if foundUser != nil {
-		log.Println("Matching user: ", foundUser.Name)
+		// log.Println("Matching user: ", foundUser.Name)
 		return strings.TrimSpace(foundUser.Name)
 	}
 
