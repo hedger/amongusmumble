@@ -12,7 +12,21 @@ import (
 	"layeh.com/gumble/gumble"
 )
 
+/*
+    public enum PlayerAction
+    {
+        Joined,         // 0
+        Left,           // 1
+        Died,           // 2
+        ChangedColor,   // 3
+        ForceUpdated,   // 4
+        Disconnected,   // 5
+        Exiled          // 6
+    }
+*/
+
 type player struct {
+    Action       int    `json:"Action"`
 	Name         string `json:"Name"`
 	Color        int    `json:"Color"`
 	IsDead       bool   `json:"IsDead"`
@@ -86,7 +100,13 @@ func SocketioServer(client *gumble.Client, listenaddress string, listenport stri
 		_ = json.Unmarshal([]byte(msg), &player)
 
 		if gamestate == "LOBBY" {
-			mumble.Namecheck(client, strings.TrimSpace(player.Name))
+            if player.Action != 1 /* did not just left */ && player.Action != 5 /* did not just disconnected */ {
+    			isFound := mumble.Namecheck(client, strings.TrimSpace(player.Name))
+                if isFound == false {
+					channel := client.Channels.Find("AmongUs")
+                    channel.Send("'" + player.Name + "' is invalid", true)
+                }
+            }
 		} else {
 			if player.IsDead == true {
 				deadplayers = mumble.Kill(client, strings.TrimSpace(player.Name), gamestate, deadplayers)

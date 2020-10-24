@@ -132,6 +132,7 @@ func isMn(r rune) bool {
 }
 
 func FindUserForPlayer(users gumble.Users, player string) string {
+    player = strings.ToLower(player)
 	// log.Println("Resolving user: ", player)
 	foundUser := users.Find(player)
 	if foundUser != nil {
@@ -147,7 +148,12 @@ func FindUserForPlayer(users gumble.Users, player string) string {
 	var bestMatchingUser *gumble.User
 
 	for _, element := range users {
-		mumbleUserName = strings.TrimSpace(element.Name)
+		mumbleUserName = strings.Map(func(r rune) rune {
+		    if unicode.IsLetter(r) || unicode.IsNumber(r) {
+			    return r
+    		}
+	    	return -1
+	    }, element.Name)
 		// log.Println("Mumble user:", mumbleUserName)
 		// log.Println("Mumble user cmt:", element.Comment)
 		mumbleUserName, _, _ := transform.String(t, mumbleUserName)
@@ -174,7 +180,7 @@ func FindUserForPlayer(users gumble.Users, player string) string {
 }
 
 // Namecheck makes sure player has a valid comment
-func Namecheck(c *gumble.Client, player string) {
+func Namecheck(c *gumble.Client, player string) bool {
 	//var player2 string
 
 	lobby := c.Channels.Find("AmongUs", "Lobby")
@@ -184,10 +190,11 @@ func Namecheck(c *gumble.Client, player string) {
 	mumbleUser := FindUserForPlayer(lobbyusers, player)
 	if len(mumbleUser) > 0 {
 		log.Println("User set:", mumbleUser, "==", player)
-		return
+		return true
 	}
 
 	log.Println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
 	log.Println("Player", player, "does not have a mumble user set.")
 	log.Println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+    return false
 }
