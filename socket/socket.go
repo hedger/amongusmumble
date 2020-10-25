@@ -118,14 +118,16 @@ func SocketioServer(client *gumble.Client, listenaddress string, listenport stri
 					log.Println("In game player:", player)
 					aliveusers := client.Channels[alive.ID].Users
 
-					for _, element := range aliveusers {
-						if element.Comment == player.Name {
-							element.Move(dead)
-							element.SetMuted(false)
-							element.SetDeafened(false)
-							log.Println(player.Name, "Moved to Dead")
-						}
+					mumbleUser := mumble.FindUserForPlayer(aliveusers, player.Name)
+					if mumbleUser == nil {
+						log.Println(player.Name, "Cannot find mumble user!!!")
+					} else {
+						mumbleUser.Move(dead)
+						mumbleUser.SetMuted(false)
+						mumbleUser.SetDeafened(false)
+						log.Println(player.Name, "Moved to Dead")
 					}
+
 				} else {
 					log.Println("Move", player.Name, "to Dead at end of round")
 				}

@@ -19,10 +19,11 @@ func Kill(c *gumble.Client, player string, gamestate string, deadplayers []strin
 	log.Println("In game player:", player)
 	aliveusers := c.Channels[alive.ID].Users
 	var player2 string
-	player2 = FindUserForPlayer(aliveusers, player)
-	if len(player2) == 0 {
+	deadMumbleUser := FindUserForPlayer(aliveusers, player)
+	if deadMumbleUser == nil {
 		log.Println("Mumble user is unknown for dead player", player2)
 	}
+	player2 = deadMumbleUser.Name
 
 	duplicateplayer := 0
 
@@ -137,7 +138,7 @@ func isMn(r rune) bool {
 	return unicode.Is(unicode.Mn, r) // Mn: nonspacing marks
 }
 
-func FindUserForPlayer(users gumble.Users, player string) string {
+func FindUserForPlayer(users gumble.Users, player string) *gumble.User {
 	player = strings.ToLower(player)
 	// log.Println("Resolving user: ", player)
 
@@ -145,7 +146,7 @@ func FindUserForPlayer(users gumble.Users, player string) string {
 	foundUser := users.Find(player)
 	if foundUser != nil {
 		// log.Println("Matching user: ", foundUser.Name)
-		return strings.TrimSpace(foundUser.Name)
+		return foundUser
 	}
 
 	var mumbleUserName string
@@ -158,7 +159,7 @@ func FindUserForPlayer(users gumble.Users, player string) string {
 	for _, mumbleUser := range users {
 		// Fast match: if comment contains IGN
 		if mumbleUser.Comment == player {
-			return strings.TrimSpace(mumbleUser.Name)
+			return mumbleUser
 		}
 
 		mumbleUserName = strings.Map(func(r rune) rune {
@@ -186,10 +187,10 @@ func FindUserForPlayer(users gumble.Users, player string) string {
 
 	if (bestMatchingDist > 9000) || (bestMatchingDist > (len(player) - 2)) {
 		// log.Println("No best match")
-		return ""
+		return nil
 	}
 
-	return strings.TrimSpace(bestMatchingUser.Name)
+	return bestMatchingUser
 }
 
 // Namecheck makes sure player has a valid comment
@@ -201,8 +202,8 @@ func Namecheck(c *gumble.Client, player string) bool {
 
 	log.Println("Checking if", player, "has a mumble user set")
 	mumbleUser := FindUserForPlayer(lobbyusers, player)
-	if len(mumbleUser) > 0 {
-		log.Println("User set:", mumbleUser, "==", player)
+	if mumbleUser != nil {
+		log.Println("User set:", mumbleUser.Name, "==", player)
 		return true
 	}
 
