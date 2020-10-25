@@ -138,8 +138,10 @@ func isMn(r rune) bool {
 }
 
 func FindUserForPlayer(users gumble.Users, player string) string {
-    player = strings.ToLower(player)
+	player = strings.ToLower(player)
 	// log.Println("Resolving user: ", player)
+
+	// Fast match: by extact same nickname
 	foundUser := users.Find(player)
 	if foundUser != nil {
 		// log.Println("Matching user: ", foundUser.Name)
@@ -153,15 +155,20 @@ func FindUserForPlayer(users gumble.Users, player string) string {
 	bestMatchingDist := 9001
 	var bestMatchingUser *gumble.User
 
-	for _, element := range users {
+	for _, mumbleUser := range users {
+		// Fast match: if comment contains IGN
+		if mumbleUser.Comment == player {
+			return strings.TrimSpace(mumbleUser.Name)
+		}
+
 		mumbleUserName = strings.Map(func(r rune) rune {
-		    if unicode.IsLetter(r) || unicode.IsNumber(r) {
-			    return r
-    		}
-	    	return -1
-	    }, element.Name)
+			if unicode.IsLetter(r) || unicode.IsNumber(r) {
+				return r
+		}
+			return -1
+		}, mumbleUser.Name)
 		// log.Println("Mumble user:", mumbleUserName)
-		// log.Println("Mumble user cmt:", element.Comment)
+		// log.Println("Mumble user cmt:", mumbleUser.Comment)
 		mumbleUserName, _, _ := transform.String(t, mumbleUserName)
 		mumbleUserName = strings.ToLower(mumbleUserName)
 		// log.Println("Filtered mumble user:", mumbleUserName)
@@ -170,7 +177,7 @@ func FindUserForPlayer(users gumble.Users, player string) string {
 		// log.Println("Lev dist:", levDist)
 
 		if (levDist < bestMatchingDist) {
-			bestMatchingUser = element
+			bestMatchingUser = mumbleUser
 			bestMatchingDist = levDist
 		}
 	}
@@ -202,5 +209,5 @@ func Namecheck(c *gumble.Client, player string) bool {
 	log.Println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
 	log.Println("Player", player, "does not have a mumble user set.")
 	log.Println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-    return false
+	return false
 }
